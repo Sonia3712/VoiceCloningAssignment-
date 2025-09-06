@@ -1,0 +1,12 @@
+
+streamlit
+pdfplumber
+pydub
+deepgram-sdk==4.8.1
+torch
+torchaudio
+TTS==0.14.3
+numpy
+scipy
+librosa
+blinker
