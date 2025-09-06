@@ -1,7 +1,0 @@
-streamlit==1.38.0
-pdfplumber==0.11.4
-pydub==0.25.1
-deepgram-sdk==4.8.1
-torch==2.1.0
-torchaudio==2.1.0
-TTS==0.22.0
