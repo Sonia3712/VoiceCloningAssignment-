@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "app.py": {
-      "runtime": "vercel-python@0.5.0"
-    }
-  }
-}
