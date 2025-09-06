@@ -1,18 +1,17 @@
-
-import streamlit as st
-import pdfplumber
 import os
 import re
+import glob
 import torch
+import logging
+import numpy as np
+import pdfplumber
+import streamlit as st
+from datetime import datetime
 from pydub import AudioSegment
 from TTS.api import TTS
 from scipy.io import wavfile
-import numpy as np
 from librosa import resample
 from deepgram import DeepgramClient, SpeakOptions
-from datetime import datetime
-import glob
-import logging
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +25,7 @@ pdf_file = st.file_uploader("Upload Life 3.0 PDF", type="pdf")
 voice_file = st.file_uploader("Upload Voice Sample (.wav or .mp3)", type=["wav", "mp3"])
 page_range = st.text_input("Page Range (e.g., 1-10, leave blank for full book)", "")
 DEEPGRAM_API_KEY = st.text_input("Enter Deepgram API Key", type="password")
-use_existing = st.checkbox("Use existing audiobook files from Google Drive if available", value=True)
+use_existing = st.checkbox("Use existing audiobook files if available", value=True)
 
 if st.button("Generate Audiobook"):
     if not pdf_file or not voice_file or not DEEPGRAM_API_KEY:
@@ -126,60 +125,4 @@ if st.button("Generate Audiobook"):
                 combined_deepgram.export(deepgram_wav, format="wav")
                 st.write(f"Deepgram TTS saved to: {deepgram_wav}")
 
-        if os.path.exists(deepgram_wav):
-            st.audio(deepgram_wav)
-            with open(deepgram_wav, "rb") as f:
-                st.download_button("Download Deepgram TTS", f.read(), file_name=os.path.basename(deepgram_wav))
-
-        # YourTTS Voice Cloning
-        existing_yourtts = glob.glob(os.path.join(output_dir, "life_30_yourtts_cloned_*.mp3"))
-        if use_existing and existing_yourtts:
-            mp3_path = max(existing_yourtts, key=os.path.getmtime)
-            st.write(f"Using existing YourTTS cloned audiobook: {mp3_path}")
-        else:
-            # Now safely read as WAV
-            try:
-                samplerate, data = wavfile.read(voice_path)
-                if data.dtype != np.float32:
-                    data = data.astype(np.float32) / np.iinfo(data.dtype).max
-                if samplerate != 22050:
-                    data = resample(data, orig_sr=samplerate, target_sr=22050)
-                    resampled_path = os.path.join(base_dir, "resampled_voice.wav")
-                    wavfile.write(resampled_path, 22050, (data * 32767).astype(np.int16))
-                    voice_path = resampled_path
-            except Exception as e:
-                st.error(f"Error reading WAV file: {str(e)}")
-                st.stop()
-
-            try:
-                tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False)
-                st.write("YourTTS model loaded.")
-            except Exception as e:
-                st.error(f"Failed to load YourTTS: {str(e)}")
-                st.stop()
-
-            chunk_size = 2000
-            chunks = [book_text[i:i+2000] for i in range(0, len(book_text), 2000)]
-            output_files = []
-
-            for i, chunk in enumerate(chunks):
-                st.write(f"Generating cloned chunk {i+1}/{len(chunks)}...")
-                output_path = os.path.join(output_dir, f"chunk_{i}.wav")
-                try:
-                    tts.tts_to_file(text=chunk, file_path=output_path, speaker_wav=voice_path, language='en')
-                    output_files.append(output_path)
-                except Exception as e:
-                    st.error(f"Voice cloning error on chunk {i+1}: {str(e)}")
-                    break
-
-            if output_files:
-                combined = AudioSegment.empty()
-                for output_path in output_files:
-                    combined += AudioSegment.from_wav(output_path)
-                combined.export(mp3_path, format="mp3")
-                st.write(f"Cloned audiobook saved to: {mp3_path}")
-
-        if os.path.exists(mp3_path):
-            st.audio(mp3_path)
-            with open(mp3_path, "rb") as f:
-                st.download_button("Download Cloned Audiobook", f.read(), file_name=os.path.basename(mp3_path))
+        if os.path.exists(deepgram
